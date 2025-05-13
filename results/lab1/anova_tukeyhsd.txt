@@ -1,0 +1,15 @@
+One-way ANOVA
+F value: 140.0847527540345
+P value: 7.027109022252085e-73
+Tukey HSD:
+Multiple Comparison of Means - Tukey HSD, FWER=0.05
+===================================================
+group1 group2 meandiff p-adj  lower   upper  reject
+---------------------------------------------------
+  dips   lbow     2.84    0.0 1.6592  4.0208   True
+  dips sep_ae     4.18    0.0 2.9992  5.3608   True
+  dips    vae     9.18    0.0 7.9992 10.3608   True
+  lbow sep_ae     1.34 0.0187 0.1592  2.5208   True
+  lbow    vae     6.34    0.0 5.1592  7.5208   True
+sep_ae    vae      5.0    0.0 3.8192  6.1808   True
+---------------------------------------------------
