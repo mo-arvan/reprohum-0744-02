@@ -1,0 +1,18 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: reprohum-0744-02
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Mohammad
+    family-names: Arvan
+    email: marvan3@uic.edu
+    affiliation: University of Illinois at Chicago
+  - given-names: Natalie
+    family-names: Parde
+    affiliation: University of Illinois at Chicago
+license: CC-BY-4.0
