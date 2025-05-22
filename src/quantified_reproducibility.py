@@ -1,7 +1,9 @@
-from scipy.stats import pearsonr, spearmanr
-import cv
-import pandas as pd
 import csv
+
+import pandas as pd
+from scipy.stats import pearsonr, spearmanr
+
+import cv
 
 
 def calculate_pearson_spearman_correlation(set_a, set_b):
@@ -27,13 +29,25 @@ def calculate_pearson_spearman_correlation(set_a, set_b):
         "spearman_p": spearman_p,
     }
     df = pd.DataFrame([pearson_result_dict])
-    df.to_csv("results/lab1/tables/pearson.csv", index=False, quoting=csv.QUOTE_NONNUMERIC, )
-    df.to_latex("results/lab1/tables/pearson.tex", float_format="{:0.2f}".format, escape=True)
+    df.to_csv(
+        "results/lab1/tables/pearson.csv",
+        index=False,
+        quoting=csv.QUOTE_NONNUMERIC,
+    )
+    df.to_latex(
+        "results/lab1/tables/pearson.tex", float_format="{:0.2f}".format, escape=True
+    )
 
     print(df)
     df = pd.DataFrame([spearman_result_dict])
-    df.to_csv("results/lab1/tables/spearman.csv", index=False, quoting=csv.QUOTE_NONNUMERIC, )
-    df.to_latex("results/lab1/tables/spearman.tex", float_format="{:0.2f}".format, escape=True)
+    df.to_csv(
+        "results/lab1/tables/spearman.csv",
+        index=False,
+        quoting=csv.QUOTE_NONNUMERIC,
+    )
+    df.to_latex(
+        "results/lab1/tables/spearman.tex", float_format="{:0.2f}".format, escape=True
+    )
     print(df)
 
 
@@ -54,19 +68,21 @@ def calculate_coefficient_of_variation(set_a, set_b, range_start, range_end):
         full_result_list.append(precision_results)
     df = pd.DataFrame(full_result_list)
 
-    df.to_latex("results/lab1/tables/cv_2_way.tex", float_format="{:0.2f}".format, escape=True)
+    df.to_latex(
+        "results/lab1/tables/cv_2_way.tex", float_format="{:0.2f}".format, escape=True
+    )
     print(df)
 
 
 def main():
-    results_df = pd.read_csv("results/lab1/tables/results.csv")
-    hosking_results = pd.read_csv("results/original/results.csv")
+    reproduced_results = pd.read_csv("results/lab1/tables/results.csv")
+    original_results = pd.read_csv("results/original/results.csv")
 
-    results_df.sort_values(by="system", inplace=True)
-    hosking_results.sort_values(by="system", inplace=True)
+    reproduced_results.sort_values(by="system", inplace=True)
+    original_results.sort_values(by="system", inplace=True)
     # need to ensure that the data is in the same order, this can be done using the system column
-    original_values = hosking_results["best_worst_scale"].values
-    ours_values = results_df["best_worst_scale"].values
+    original_values = original_results["best_worst_scale"].values
+    ours_values = reproduced_results["best_worst_scale"].values
 
     calculate_pearson_spearman_correlation(original_values, ours_values)
     calculate_coefficient_of_variation(original_values, ours_values, -100, 100)

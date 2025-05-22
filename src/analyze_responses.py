@@ -1,12 +1,11 @@
-import argparse
 import csv
 import os
 
 import krippendorff
-import numpy as np
 import pandas as pd
 from scipy import stats
-from statsmodels.stats.multicomp import MultiComparison, pairwise_tukeyhsd
+from statsmodels.stats.multicomp import MultiComparison
+from statsmodels.stats.inter_rater import fleiss_kappa
 
 
 def get_selected_systems(meaning_i):
@@ -31,12 +30,10 @@ def filter_attention_checks(results_df):
 
     system_a_is_ditractor = results_df[results_df["systema"] == "distractor"]
     system_b_is_distractor = results_df[results_df["systemb"] == "distractor"]
-    
+
     desired_task_uuid = "df51b2dd-7f64-437d-824a-f472ffc011cd"
-    
-    matching_task_uuid = results_df[
-        results_df["task_uuid"] == desired_task_uuid
-    ]
+
+    matching_task_uuid = results_df[results_df["task_uuid"] == desired_task_uuid]
 
     system_a_is_distractor_and_selected = system_a_is_ditractor[
         system_a_is_ditractor["selected_system"] == 0
@@ -44,7 +41,7 @@ def filter_attention_checks(results_df):
     system_b_is_distractor_and_selected = system_b_is_distractor[
         system_b_is_distractor["selected_system"] == 1
     ]
-    
+
     distractor_is_selected = pd.concat(
         [
             system_a_is_distractor_and_selected,
@@ -104,9 +101,9 @@ def preprocess_responses_df(responses_df):
         for i in range(32):
             selected_system = row[f"meaning{i}"]
             results_dict = dict()
-            results_dict[f"systema"] = row[f"systema{i}"]
-            results_dict[f"systemb"] = row[f"systemb{i}"]
-            system_a_and_b = [results_dict[f"systema"], results_dict[f"systemb"]]
+            results_dict["systema"] = row[f"systema{i}"]
+            results_dict["systemb"] = row[f"systemb{i}"]
+            system_a_and_b = [results_dict["systema"], results_dict["systemb"]]
 
             # if any([x in attention_check_list for x in system_a_and_b]):
             #     # it is not clear what to do when a participant fails the attention check
@@ -115,7 +112,7 @@ def preprocess_responses_df(responses_df):
             results_dict["dataset"] = row[f"dataset{i}"]
             results_dict["dataset_index"] = row[f"ix{i}"]
             results_dict["dataset_id"] = f"{row[f'dataset{i}']}-{row[f'ix{i}']}"
-            results_dict[f"selected_system"] = selected_system
+            results_dict["selected_system"] = selected_system
             results_dict["input"] = row[f"input{i}"]
             results_dict["outputa"] = row[f"outputa{i}"]
             results_dict["outputb"] = row[f"outputb{i}"]
@@ -142,7 +139,30 @@ def load_and_preprocess_responses():
     return responses_processed_df
 
 
-def calculate_inter_annotator_agreement(responses_processed_df):
+def report_fleiss_kappa(responses_processed_df):
+    # need itemx x category matrix
+    # n columns, represents the options
+    # m rows, represents the each task
+
+    matrix = (
+        responses_processed_df.groupby(["task_id", "selected_system"])
+        .size()
+        .unstack(fill_value=0)
+    )
+
+    fleiss_kappa_value = fleiss_kappa(matrix.values, method="fleiss")
+
+    with open("results/lab1/fleiss_kappa.txt", "w") as f:
+        f.write(f"Fleiss Kappa: {fleiss_kappa_value:.3f}")
+
+    matrix.to_csv(
+        "results/lab1/fleiss_kappa_matrix.csv",
+        index=True,
+        quoting=csv.QUOTE_NONNUMERIC,
+    )
+
+
+def report_krippendorff_alpha(responses_processed_df):
     reliability_data = (
         responses_processed_df[["task_id", "participant_id", "selected_system"]]
         .pivot_table(
@@ -168,7 +188,7 @@ def calculate_inter_annotator_agreement(responses_processed_df):
     return alpha
 
 
-def print_datasets_used(responses_processed_df):
+def report_datasets_used(responses_processed_df):
     responses_processed_df.sort_values(by=["dataset_id", "systema", "systemb"])
     datasets_and_index = responses_processed_df[
         ["dataset", "dataset_index"]
@@ -179,7 +199,7 @@ def print_datasets_used(responses_processed_df):
         .agg(count=("dataset", "size"))
         .reset_index()
     )
-    
+
     os.makedirs("results/lab1/tables", exist_ok=True)
 
     datasets_grouped.to_csv(
@@ -205,7 +225,7 @@ def print_datasets_used(responses_processed_df):
 
 
 def calculate_metrics_alternative_2(responses_processed_df):
-    system_order_dict = {"vae": 0,  "sep_ae": 1, "lbow": 1, "dips": 3}
+    system_order_dict = {"vae": 0, "sep_ae": 1, "lbow": 1, "dips": 3}
 
     system_count_dict = {system: 0 for system in system_order_dict.keys()}
 
@@ -233,7 +253,7 @@ def calculate_metrics_alternative_2(responses_processed_df):
 def get_task_scores(responses_processed_df):
     dataset_id_list = responses_processed_df["dataset_id"].unique().tolist()
 
-    system_order_dict = {"vae": 0,  "sep_ae": 1, "lbow": 1, "dips": 3}
+    system_order_dict = {"vae": 0, "sep_ae": 1, "lbow": 1, "dips": 3}
 
     system_count_dict = {system: 0 for system in system_order_dict.keys()}
 
@@ -263,7 +283,7 @@ def get_task_scores(responses_processed_df):
     return scores_df, system_count_dict
 
 
-def perform_significant_testing(responses_processed_df):
+def report_significant_testing(responses_processed_df):
     scores_df, system_count_dict = get_task_scores(responses_processed_df)
 
     statistic, p = stats.f_oneway(*(scores_df.values.T).tolist())
@@ -281,7 +301,7 @@ def perform_significant_testing(responses_processed_df):
     print(result)
 
     with open("results/lab1/anova_tukeyhsd.txt", "w") as file:
-        file.write(f"One-way ANOVA\n")
+        file.write("One-way ANOVA\n")
         file.write(f"F value: {statistic}\n")
         file.write(f"P value: {p}\n")
         file.write("Tukey HSD:\n")
@@ -289,7 +309,7 @@ def perform_significant_testing(responses_processed_df):
     return scores_df, system_count_dict
 
 
-def calculate_metrics(responses_processed_df):
+def report_metrics(responses_processed_df):
     metrics_list = []
 
     systems_set = set(
@@ -338,7 +358,7 @@ def calculate_metrics(responses_processed_df):
             "win_percentage": win_percentage,
         }
         metrics_list.append(metrics_dict)
-    system_order_dict = {"vae": 0,  "sep_ae": 1, "lbow": 1, "dips": 3}
+    system_order_dict = {"vae": 0, "sep_ae": 1, "lbow": 1, "dips": 3}
 
     metrics_list = sorted(metrics_list, key=lambda x: system_order_dict[x["system"]])
 
@@ -359,12 +379,13 @@ def calculate_metrics(responses_processed_df):
 def main():
     responses_processed_df = load_and_preprocess_responses()
 
-    print_datasets_used(responses_processed_df)
+    report_datasets_used(responses_processed_df)
 
-    perform_significant_testing(responses_processed_df)
-    metrics_df = calculate_metrics(responses_processed_df)
+    report_significant_testing(responses_processed_df)
+    report_metrics(responses_processed_df)
 
-    alpha = calculate_inter_annotator_agreement(responses_processed_df)
+    report_fleiss_kappa(responses_processed_df)
+    report_krippendorff_alpha(responses_processed_df)
 
 
 if __name__ == "__main__":
